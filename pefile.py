@@ -46,7 +46,6 @@ import array
 import mmap
 import ordlookup
 
-from collections import Counter
 from hashlib import sha1
 from hashlib import sha256
 from hashlib import sha512
@@ -1151,15 +1150,18 @@ class SectionStructure(Structure):
         if len(data) == 0:
             return 0.0
 
-        occurences = Counter(bytearray(data))
+        occurences = [0] * 256
+        for b in bytearray(data):
+            occurences[b] =+ 1
 
-        entropy = 0
-        for x in occurences.values():
+        entropy = 0.0
+        for x in occurences:
+            if x == 0:
+                continue
             p_x = float(x) / len(data)
             entropy -= p_x*math.log(p_x, 2)
 
         return entropy
-
 
 
 class DataContainer(object):
@@ -1812,7 +1814,11 @@ class PE(object):
             self.__data__ = data
             self.__from_file = False
 
-        for byte, byte_count in Counter(bytearray(self.__data__)).items():
+        occurences = [0] * 256
+        for b in bytearray(self.__data__):
+            occurences[b] =+ 1
+
+        for byte, byte_count in enumerate(occurences):
             # Only report the cases where a byte makes up for more than 50% (if
             # zero) or 15% (if non-zero) of the file's contents. There are
             # legitimate PEs where 0x00 bytes are close to 50% of the whole
